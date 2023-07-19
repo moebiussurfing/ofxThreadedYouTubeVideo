@@ -13,6 +13,7 @@ class ofxThreadedYouTubeVideo : public ofThread
 {
     public:
         string API_KEY = "AIzaSyBktb4-29cLsw_g_oeeMjJ0CfYQKv6-Vc8";
+        string lastFile = "";
 
     public:
         ofxThreadedYouTubeVideo();
@@ -42,6 +43,8 @@ class ofxThreadedYouTubeVideo : public ofThread
             string input_url;
             bool bLoaded;
             int id;
+
+            string path;
         };
 
 

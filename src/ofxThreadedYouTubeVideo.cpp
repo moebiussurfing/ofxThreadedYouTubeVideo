@@ -11,7 +11,6 @@ ofxThreadedYouTubeVideo::~ofxThreadedYouTubeVideo()
 	waitForThread(true);
 }
 
-
 // Load a url
 //--------------------------------------------------------------
 void ofxThreadedYouTubeVideo::loadYouTubeURL(string _url, int _id)
@@ -19,7 +18,6 @@ void ofxThreadedYouTubeVideo::loadYouTubeURL(string _url, int _id)
 	ofYouTubeLoaderEntry entry(_url, _id);
 
 	urls_to_load.send(entry);
-
 }
 
 //------------------------------------------------------------------------------
@@ -51,11 +49,11 @@ const string ofxThreadedYouTubeVideo::getRandomURL()
 	//const string search_url = "https://www.googleapis.com/youtube/v3/search?q=\"v=" + genRandomString(4) + "\"&key=YOUR_NEW_API_KEY&part=snippet&maxResults=50&";
 
 
-	cout << "--------------------------------------------------" << endl;
-	cout << "URL=" << search_url << endl;
+	ofLogNotice("ofxThreadedYouTubeVideo") << "--------------------------------------------------" << endl;
+	ofLogNotice("ofxThreadedYouTubeVideo") << "URL=" << search_url ;
 
 	if (!response.open(search_url)) {
-		cout << "Failed to parse JSON\n" << endl;
+		ofLogNotice("ofxThreadedYouTubeVideo") << "Failed to parse JSON\n" ;
 	}
 
 	unsigned int numVideos = response["items"].size();
@@ -72,9 +70,9 @@ const string ofxThreadedYouTubeVideo::getRandomURL()
 
 	Json::Value entryNode = response["items"][i];
 
-	cout << "title = " << entryNode["snippet"]["title"].asString() << endl;
-	cout << "video id = " << entryNode["id"]["videoId"].asString() << endl;
-	cout << "--------------------------------------------------" << endl;
+	ofLogNotice("ofxThreadedYouTubeVideo") << "title = " << entryNode["snippet"]["title"].asString();
+	ofLogNotice("ofxThreadedYouTubeVideo") << "video id = " << entryNode["id"]["videoId"].asString();
+	ofLogNotice("ofxThreadedYouTubeVideo") << "--------------------------------------------------";
 
 	url = "https://www.youtube.com/watch?v=" + entryNode["id"]["videoId"].asString();
 
@@ -95,6 +93,7 @@ bool ofxThreadedYouTubeVideo::getNewURL(ofYouTubeLoaderEntry& entry)
 		}
 	}
 
+	//original
 	//string video_url = "youtube-dl -g -f 18 \"" + new_url + "\"";
 
 	string args_url_YT = ofToString(" \"") + new_url + ofToString("\"");
@@ -112,22 +111,22 @@ bool ofxThreadedYouTubeVideo::getNewURL(ofYouTubeLoaderEntry& entry)
 	// yt-dlp -f bestvideo[ext=mp4] "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 	// yt-dlp -f bestvideo[ext=mp4]+bestaudio "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
-	//string args_url = ofToString("-f bestvideo[ext=mp4]"); // V mp4
-	string args_url = ofToString("-f bestvideo[ext=mp4]+bestaudio"); // AV mkv
-	//string args_url = ofToString("-f bestvideo");
-	//string args_url = ofToString("-f best");
-	//string args_url = ofToString("-f b");
+	string args_url = "-f bestvideo[ext=mp4]"; // V mp4
+	//string args_url = "-f bestvideo[ext=mp4]+bestaudio"; // AV mkv
+	//string args_url = "-f bestvideo";
+	//string args_url = "-f best";
+	//string args_url = "-f b";
+	//string args_url = "-g -f 18"; //This command will print the direct URL for the specified video in MP4 format with a resolution of 640x360 and an audio bitrate of 96 kbps, without actually downloading the video.
 
-	string video_url = app_exe + " " + args_opt + " " + args_url + args_url_YT;
+	string video_url = app_exe + string(" ") + args_opt + string(" ") + args_url + args_url_YT;
 
-	ofLogWarning() << video_url << endl;
-	cout << video_url << endl << endl;
+	ofLogNotice("ofxThreadedYouTubeVideo") << video_url << endl;
 
 	FILE* in;
 	char buff[2048];
 
 	if (!(in = _popen(video_url.c_str(), "r"))) {
-		cout << "failed to popen" << endl;
+		ofLogError("ofxThreadedYouTubeVideo") << "failed to popen" << endl;
 		return false;
 	}
 
@@ -142,8 +141,13 @@ bool ofxThreadedYouTubeVideo::getNewURL(ofYouTubeLoaderEntry& entry)
 	//video_url = "\"" + video_url + "\"";
 
 	entry.url = video_url;
-	return true;
 
+	//TODO: not sure we can load from an url directly..
+	//TODO: we should get the path where the file is saved..
+	entry.path = "../Rick Astley - Never Gonna Give You Up (Official Music Video) [dQw4w9WgXcQ].mp4";
+	//entry.path = "../Rick Astley - Never Gonna Give You Up (Official Music Video) [dQw4w9WgXcQ].mkv";
+
+	return true;
 }
 
 void ofxThreadedYouTubeVideo::threadedFunction()
@@ -156,22 +160,20 @@ void ofxThreadedYouTubeVideo::threadedFunction()
 		while (urls_to_load.receive(entry)) {
 
 			if (!getNewURL(entry)) {
-				ofLogError("ofxThreadedYouTubeVideo") << "couldn't load url: \"" << entry.input_url << "\"";
+				ofLogError("ofxThreadedYouTubeVideo") << "Couldn't load url: \n\"" << entry.input_url << "\"";
 				//get another random video and try again
 				loadYouTubeURL("", entry.id);
 			}
 			else {
-				cout << "ofxThreadedYouTubeVideo got video url: " << entry.url << endl;
+				ofLogNotice("ofxThreadedYouTubeVideo") << "Got video url: \n" << entry.url << endl;
 				ofVideoPlayer* vid = new ofVideoPlayer();
 				vid->setUseTexture(false);
-				vid->load(entry.url);
+				vid->load(entry.path);
+				//vid->load(entry.url);
+
 				ofxYouTubeURLEvent e = ofxYouTubeURLEvent(entry.url, entry.id, vid);
 				ofNotifyEvent(youTubeURLEvent, e, this);
 			}
-
-
-
 		}
-
 	} //is thread running
 }
