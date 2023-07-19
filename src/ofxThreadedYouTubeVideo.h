@@ -1,5 +1,15 @@
 #pragma once
 
+/*
+#ifdef _WIN32
+    _popen(download_cmd.c_str(), "r");
+    _pclose(in);
+#else
+    popen(download_cmd.c_str(), "r");
+    pclose(in);
+#endif
+*/
+
 #include "ofMain.h"
 #include "ofxJSONElement.h"
 #include "ofxXmlPoco.h"
@@ -14,6 +24,10 @@ class ofxThreadedYouTubeVideo : public ofThread
     public:
         string API_KEY = "AIzaSyBktb4-29cLsw_g_oeeMjJ0CfYQKv6-Vc8";
         string lastFile = "";
+        void doRandom() {
+            ofLogNotice("ofxThreadedYouTubeVideo") << "doRandom() \n" << getRandomURL();
+        }
+        const string doQuery(string text);
 
     public:
         ofxThreadedYouTubeVideo();
@@ -44,7 +58,7 @@ class ofxThreadedYouTubeVideo : public ofThread
             bool bLoaded;
             int id;
 
-            string path;
+            string path;//TODO
         };
 
 
