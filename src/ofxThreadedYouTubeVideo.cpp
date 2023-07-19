@@ -2,13 +2,13 @@
 
 ofxThreadedYouTubeVideo::ofxThreadedYouTubeVideo()
 {
-    startThread();
+	startThread();
 }
 
 ofxThreadedYouTubeVideo::~ofxThreadedYouTubeVideo()
 {
-    urls_to_load.close();
-    waitForThread(true);
+	urls_to_load.close();
+	waitForThread(true);
 }
 
 
@@ -18,129 +18,160 @@ void ofxThreadedYouTubeVideo::loadYouTubeURL(string _url, int _id)
 {
 	ofYouTubeLoaderEntry entry(_url, _id);
 
-    urls_to_load.send(entry);
+	urls_to_load.send(entry);
 
 }
 
 //------------------------------------------------------------------------------
 const string ofxThreadedYouTubeVideo::genRandomString(const int len) {
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
+	static const char alphanum[] =
+		"0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz";
 
-    string s;
+	string s;
 
-    for (int i = 0; i < len; ++i) {
-        char c = alphanum[rand() % (sizeof(alphanum) - 1)];
-        s.push_back(c);
-    }
+	for (int i = 0; i < len; ++i) {
+		char c = alphanum[rand() % (sizeof(alphanum) - 1)];
+		s.push_back(c);
+	}
 
-    return s;
+	return s;
 }
 
 //------------------------------------------------------------------------------
 const string ofxThreadedYouTubeVideo::getRandomURL()
 {
-    string url = "";
+	string url = "";
 
-    const string search_url = "https://www.googleapis.com/youtube/v3/search?q=\"v="+genRandomString(4)+"\"&key=AIzaSyDGYA7woinSUM_eQStrJWgLaCA5fugJ3IA&part=snippet&maxResults=50&";
+	//const string search_url = "https://www.googleapis.com/youtube/v3/search?q=\"v="+genRandomString(4)+"\"&key=AIzaSyDGYA7woinSUM_eQStrJWgLaCA5fugJ3IA&part=snippet&maxResults=50&";
 
-    cout << "--------------------------------------------------" << endl;
-    cout << "URL=" << search_url << endl;
+	const string search_url = "https://www.googleapis.com/youtube/v3/search?q=\"v=" + genRandomString(4) + "\"&key=" + API_KEY + "&part=snippet&maxResults=50&";
+
+	//const string search_url = "https://www.googleapis.com/youtube/v3/search?q=\"v=" + genRandomString(4) + "\"&key=YOUR_NEW_API_KEY&part=snippet&maxResults=50&";
+
+
+	cout << "--------------------------------------------------" << endl;
+	cout << "URL=" << search_url << endl;
 
 	if (!response.open(search_url)) {
-		cout  << "Failed to parse JSON\n" << endl;
+		cout << "Failed to parse JSON\n" << endl;
 	}
 
-    unsigned int numVideos = response["items"].size();
-    unsigned int totalVideos = response["pageInfo"]["totalResults"].asUInt();
-    ofLogNotice("ofxThreadedYouTubeVideo") << "Total videos = " << totalVideos;
-    ofLogNotice("ofxThreadedYouTubeVideo") << "numVideos = " << numVideos;
+	unsigned int numVideos = response["items"].size();
+	unsigned int totalVideos = response["pageInfo"]["totalResults"].asUInt();
+	ofLogNotice("ofxThreadedYouTubeVideo") << "Total videos = " << totalVideos;
+	ofLogNotice("ofxThreadedYouTubeVideo") << "numVideos = " << numVideos;
 
-    if(numVideos == 0) {
-        ofLogError("ofxThreadedYouTubeVideo") << "No videos returned";
-        return "";
-    }
+	if (numVideos == 0) {
+		ofLogError("ofxThreadedYouTubeVideo") << "No videos returned";
+		return "";
+	}
 
-    int i = ofRandom(0,numVideos);
+	int i = ofRandom(0, numVideos);
 
-    Json::Value entryNode = response["items"][i];
+	Json::Value entryNode = response["items"][i];
 
-    cout << "title = " << entryNode["snippet"]["title"].asString() << endl;
-    cout << "video id = " << entryNode["id"]["videoId"].asString() << endl;
-    cout << "--------------------------------------------------" << endl;
+	cout << "title = " << entryNode["snippet"]["title"].asString() << endl;
+	cout << "video id = " << entryNode["id"]["videoId"].asString() << endl;
+	cout << "--------------------------------------------------" << endl;
 
-    url = "https://www.youtube.com/watch?v="+entryNode["id"]["videoId"].asString();
+	url = "https://www.youtube.com/watch?v=" + entryNode["id"]["videoId"].asString();
 
-    return url;
+	return url;
 }
 
 // Get a new url - called from within thread
 //--------------------------------------------------------------
-bool ofxThreadedYouTubeVideo::getNewURL(ofYouTubeLoaderEntry& entry )
+bool ofxThreadedYouTubeVideo::getNewURL(ofYouTubeLoaderEntry& entry)
 {
-    string new_url = entry.input_url;
+	string new_url = entry.input_url;
 
-   if(new_url == "") {
-        new_url = getRandomURL();
-        if(new_url == "") {
+	if (new_url == "") {
+		new_url = getRandomURL();
+		if (new_url == "") {
 			ofLogError("ofxThreadedYouTubeDownloader") << "Empty new URL!";
 			return false;
 		}
-    }
+	}
 
-    string video_url = "youtube-dl -g -f 18 \"" + new_url + "\"";
+	//string video_url = "youtube-dl -g -f 18 \"" + new_url + "\"";
 
-	FILE *in;
+	string args_url_YT = ofToString(" \"") + new_url + ofToString("\"");
+
+	string app_exe = "yt-dlp";
+	//string app_exe = "youtube-dl";
+
+	string args_opt = ofToString("--verbose");
+	//string args_opt = ofToString("--verbose --list-formats");
+
+	// yt-dlp -f best [URL]
+	// yt-dlp -f bestaudio "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+	// yt-dlp -r 50K "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+	// yt-dlp -f bestvideo "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+	// yt-dlp -f bestvideo[ext=mp4] "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+	// yt-dlp -f bestvideo[ext=mp4]+bestaudio "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+	//string args_url = ofToString("-f bestvideo[ext=mp4]"); // V mp4
+	string args_url = ofToString("-f bestvideo[ext=mp4]+bestaudio"); // AV mkv
+	//string args_url = ofToString("-f bestvideo");
+	//string args_url = ofToString("-f best");
+	//string args_url = ofToString("-f b");
+
+	string video_url = app_exe + " " + args_opt + " " + args_url + args_url_YT;
+
+	ofLogWarning() << video_url << endl;
+	cout << video_url << endl << endl;
+
+	FILE* in;
 	char buff[2048];
 
-	if(!(in = popen(video_url.c_str(), "r"))){
+	if (!(in = _popen(video_url.c_str(), "r"))) {
 		cout << "failed to popen" << endl;
 		return false;
 	}
 
-	while(fgets(buff, sizeof(buff), in)!=NULL){
+	while (fgets(buff, sizeof(buff), in) != NULL) {
 		;//cout << buff;
 	}
-	pclose(in);
+	_pclose(in);
 
-    entry.bLoaded = false;
-    video_url = buff;
-    video_url.erase( std::remove_if(video_url.begin(), video_url.end(), ::isspace ), video_url.end() );
-    //video_url = "\"" + video_url + "\"";
+	entry.bLoaded = false;
+	video_url = buff;
+	video_url.erase(std::remove_if(video_url.begin(), video_url.end(), ::isspace), video_url.end());
+	//video_url = "\"" + video_url + "\"";
 
-    entry.url = video_url;
-    return true;
+	entry.url = video_url;
+	return true;
 
 }
 
 void ofxThreadedYouTubeVideo::threadedFunction()
 {
-    setThreadName("ofxThreadedYouTubeVideo " + ofToString(thread.get_id()));
+	setThreadName("ofxThreadedYouTubeVideo " + ofToString(thread.get_id()));
 
-	while( isThreadRunning() ) {
+	while (isThreadRunning()) {
 
-       ofYouTubeLoaderEntry entry;
-       while( urls_to_load.receive(entry) ) {
+		ofYouTubeLoaderEntry entry;
+		while (urls_to_load.receive(entry)) {
 
-            if(!getNewURL(entry)) {
-                ofLogError("ofxThreadedYouTubeVideo") << "couldn't load url: \"" << entry.input_url << "\"";
-                //get another random video and try again
-                loadYouTubeURL("",entry.id);
-            }
-            else {
-                cout << "ofxThreadedYouTubeVideo got video url: " << entry.url << endl;
-                ofVideoPlayer* vid = new ofVideoPlayer();
-                vid->setUseTexture(false);
-                vid->load(entry.url);
-                ofxYouTubeURLEvent e = ofxYouTubeURLEvent(entry.url, entry.id,vid);
-                ofNotifyEvent(youTubeURLEvent, e, this);
-            }
+			if (!getNewURL(entry)) {
+				ofLogError("ofxThreadedYouTubeVideo") << "couldn't load url: \"" << entry.input_url << "\"";
+				//get another random video and try again
+				loadYouTubeURL("", entry.id);
+			}
+			else {
+				cout << "ofxThreadedYouTubeVideo got video url: " << entry.url << endl;
+				ofVideoPlayer* vid = new ofVideoPlayer();
+				vid->setUseTexture(false);
+				vid->load(entry.url);
+				ofxYouTubeURLEvent e = ofxYouTubeURLEvent(entry.url, entry.id, vid);
+				ofNotifyEvent(youTubeURLEvent, e, this);
+			}
 
 
 
-        }
+		}
 
-    } //is thread running
+	} //is thread running
 }

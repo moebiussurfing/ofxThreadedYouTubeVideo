@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxJSONElement.h"
 #include "ofxXmlPoco.h"
+#include <stdio.h>
 
 using namespace std;
 
@@ -10,6 +11,9 @@ class ofxYouTubeURLEvent;
 
 class ofxThreadedYouTubeVideo : public ofThread
 {
+    public:
+        string API_KEY = "AIzaSyBktb4-29cLsw_g_oeeMjJ0CfYQKv6-Vc8";
+
     public:
         ofxThreadedYouTubeVideo();
         virtual ~ofxThreadedYouTubeVideo();
